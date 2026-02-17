@@ -100,8 +100,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
   return (
     <>
-      {/* Desktop Preview Panel */}
-      <div className="sticky top-4 hidden space-y-4 lg:block">
+      {/* Preview Panel - visible on all viewports so export (PDF/Image) works on mobile */}
+      <div className="sticky top-4 space-y-4">
         {/* Export Buttons */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex gap-2">

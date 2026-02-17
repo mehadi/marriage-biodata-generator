@@ -253,24 +253,17 @@ export default function CreatePage() {
             </form>
           </div>
 
-          {/* Preview Column - Right Side Desktop */}
-          <div className="hidden lg:block">
+          {/* Preview Column - visible on all viewports so PDF/Image export works on mobile */}
+          <div>
             <PreviewPanel 
               bioData={formData} 
               template={selectedTemplate}
-              showMobilePreview={false}
+              showMobilePreview={true}
               exportRef={previewRef}
             />
           </div>
         </div>
       </div>
-
-      {/* Mobile Preview FAB */}
-      <PreviewPanel 
-        bioData={formData} 
-        template={selectedTemplate}
-        showMobilePreview={true}
-      />
 
       {/* Save Draft Modal */}
       <Modal

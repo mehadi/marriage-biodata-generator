@@ -14,12 +14,18 @@ const A4_HEIGHT_MM = 297;
 /** Mobile browsers throw IndexSizeError when getImageData exceeds size/memory limits */
 const MAX_CANVAS_PIXELS = 4096 * 4096;
 
+/** Max pixels for toBlob on mobile (toBlob often returns null for large canvases) */
+const MAX_TOBLOB_PIXELS = 2048 * 2048;
+
+function isMobile(): boolean {
+  return typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
 function getCaptureOptions(): { quality: number; backgroundColor: string; pixelRatio: number; cacheBust: boolean } {
-  const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   return {
     quality: 1,
     backgroundColor: '#ffffff',
-    pixelRatio: isMobile ? 1 : 2,
+    pixelRatio: isMobile() ? 1 : 2,
     cacheBust: true,
   };
 }
@@ -45,6 +51,41 @@ function ensureCanvasWithinLimit(canvas: HTMLCanvasElement): HTMLCanvasElement {
   if (!ctx) return canvas;
   ctx.drawImage(canvas, 0, 0, w, h, 0, 0, newW, newH);
   return scaled;
+}
+
+/**
+ * Convert canvas to Blob. Uses toBlob first; on mobile toBlob often returns null, so fallback to toDataURL + fetch.
+ */
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  mime: string,
+  quality?: number
+): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          resolve(blob);
+          return;
+        }
+        try {
+          const dataUrl = canvas.toDataURL(mime, quality);
+          if (!dataUrl || dataUrl.length < 100) {
+            resolve(null);
+            return;
+          }
+          fetch(dataUrl)
+            .then((r) => r.blob())
+            .then(resolve)
+            .catch(() => resolve(null));
+        } catch {
+          resolve(null);
+        }
+      },
+      mime,
+      quality
+    );
+  });
 }
 
 /**
@@ -189,15 +230,30 @@ export class ExportService {
     try {
       const captureOpts = getCaptureOptions();
       const sourceCanvas = await toCanvas(element, captureOpts);
-      const croppedCanvas = cropCanvasToContent(
+      let croppedCanvas = cropCanvasToContent(
         sourceCanvas,
         captureOpts.backgroundColor
       );
 
+      if (isMobile() && croppedCanvas.width * croppedCanvas.height > MAX_TOBLOB_PIXELS) {
+        const w = croppedCanvas.width;
+        const h = croppedCanvas.height;
+        const scale = Math.sqrt(MAX_TOBLOB_PIXELS / (w * h));
+        const newW = Math.max(1, Math.floor(w * scale));
+        const newH = Math.max(1, Math.floor(h * scale));
+        const small = document.createElement('canvas');
+        small.width = newW;
+        small.height = newH;
+        const ctx = small.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(croppedCanvas, 0, 0, w, h, 0, 0, newW, newH);
+          croppedCanvas = small;
+        }
+      }
+
       const mime = format === 'png' ? 'image/png' : 'image/jpeg';
-      const blob = await new Promise<Blob | null>((resolve) => {
-        croppedCanvas.toBlob(resolve, mime, format === 'jpeg' ? 0.95 : 1);
-      });
+      const quality = format === 'jpeg' ? 0.95 : 1;
+      const blob = await canvasToBlob(croppedCanvas, mime, quality);
 
       if (!blob) {
         return { success: false, error: 'Failed to create image' };
