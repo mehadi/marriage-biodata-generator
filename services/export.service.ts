@@ -22,10 +22,14 @@ function isMobile(): boolean {
 }
 
 function getCaptureOptions(): { quality: number; backgroundColor: string; pixelRatio: number; cacheBust: boolean } {
+  const pixelRatio =
+    typeof window !== 'undefined'
+      ? Math.min(window.devicePixelRatio || 2, 3)
+      : 2;
   return {
     quality: 1,
     backgroundColor: '#ffffff',
-    pixelRatio: isMobile() ? 1 : 2,
+    pixelRatio: isMobile() ? 1 : pixelRatio,
     cacheBust: true,
   };
 }
@@ -49,6 +53,8 @@ function ensureCanvasWithinLimit(canvas: HTMLCanvasElement): HTMLCanvasElement {
   scaled.height = newH;
   const ctx = scaled.getContext('2d');
   if (!ctx) return canvas;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(canvas, 0, 0, w, h, 0, 0, newW, newH);
   return scaled;
 }
@@ -156,6 +162,8 @@ function cropCanvasToContent(
   const cropCtx = cropped.getContext('2d');
   if (!cropCtx) return canvas;
 
+  cropCtx.imageSmoothingEnabled = true;
+  cropCtx.imageSmoothingQuality = 'high';
   cropCtx.drawImage(canvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
   return cropped;
 }
@@ -176,7 +184,7 @@ export class ExportService {
         captureOpts.backgroundColor
       );
 
-      const dataUrl = croppedCanvas.toDataURL('image/jpeg', 0.95);
+      const dataUrl = croppedCanvas.toDataURL('image/png');
 
       const imgWidth = A4_WIDTH_MM;
       const pageHeight = A4_HEIGHT_MM;
@@ -194,16 +202,16 @@ export class ExportService {
 
       if (fitsOnePage) {
         const y = (pageHeight - imgHeight) / 2;
-        pdf.addImage(dataUrl, 'JPEG', 0, y, imgWidth, imgHeight);
+        pdf.addImage(dataUrl, 'PNG', 0, y, imgWidth, imgHeight);
       } else {
         let heightLeft = imgHeight;
         let position = 0;
-        pdf.addImage(dataUrl, 'JPEG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
         while (heightLeft > 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
-          pdf.addImage(dataUrl, 'JPEG', 0, position, imgWidth, imgHeight);
+          pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
           heightLeft -= pageHeight;
         }
       }
@@ -246,13 +254,15 @@ export class ExportService {
         small.height = newH;
         const ctx = small.getContext('2d');
         if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(croppedCanvas, 0, 0, w, h, 0, 0, newW, newH);
           croppedCanvas = small;
         }
       }
 
       const mime = format === 'png' ? 'image/png' : 'image/jpeg';
-      const quality = format === 'jpeg' ? 0.95 : 1;
+      const quality = format === 'jpeg' ? 1 : 1;
       const blob = await canvasToBlob(croppedCanvas, mime, quality);
 
       if (!blob) {
