@@ -11,15 +11,41 @@ import { downloadFile } from '@/lib/utils';
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 
-const CAPTURE_OPTIONS = {
-  quality: 1,
-  backgroundColor: '#ffffff',
-  pixelRatio: 2,
-  cacheBust: true,
-} as const;
+/** Mobile browsers throw IndexSizeError when getImageData exceeds size/memory limits */
+const MAX_CANVAS_PIXELS = 4096 * 4096;
+
+function getCaptureOptions(): { quality: number; backgroundColor: string; pixelRatio: number; cacheBust: boolean } {
+  const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  return {
+    quality: 1,
+    backgroundColor: '#ffffff',
+    pixelRatio: isMobile ? 1 : 2,
+    cacheBust: true,
+  };
+}
 
 /** Tolerance for treating a pixel as background (handles antialiasing) */
 const BG_TOLERANCE = 5;
+
+/**
+ * Scale down canvas if it exceeds mobile-safe pixel count to avoid getImageData IndexSizeError.
+ */
+function ensureCanvasWithinLimit(canvas: HTMLCanvasElement): HTMLCanvasElement {
+  const w = canvas.width;
+  const h = canvas.height;
+  if (!w || !h || w * h <= MAX_CANVAS_PIXELS) return canvas;
+
+  const scale = Math.sqrt(MAX_CANVAS_PIXELS / (w * h));
+  const newW = Math.max(1, Math.floor(w * scale));
+  const newH = Math.max(1, Math.floor(h * scale));
+  const scaled = document.createElement('canvas');
+  scaled.width = newW;
+  scaled.height = newH;
+  const ctx = scaled.getContext('2d');
+  if (!ctx) return canvas;
+  ctx.drawImage(canvas, 0, 0, w, h, 0, 0, newW, newH);
+  return scaled;
+}
 
 /**
  * Get R,G,B from hex color (e.g. '#ffffff')
@@ -32,6 +58,7 @@ function parseBackgroundRgb(hex: string): [number, number, number] {
 
 /**
  * Crop canvas to the bounding box of non-background pixels (removes empty space on all sides).
+ * Scales down oversized canvases on mobile to avoid getImageData IndexSizeError.
  */
 function cropCanvasToContent(
   canvas: HTMLCanvasElement,
@@ -40,10 +67,16 @@ function cropCanvasToContent(
   const ctx = canvas.getContext('2d');
   if (!ctx) return canvas;
 
-  const [br, bg, bb] = parseBackgroundRgb(backgroundColor);
+  canvas = ensureCanvasWithinLimit(canvas);
   const w = canvas.width;
   const h = canvas.height;
-  const imageData = ctx.getImageData(0, 0, w, h);
+  if (!w || !h) return canvas;
+
+  const ctx2 = canvas.getContext('2d');
+  if (!ctx2) return canvas;
+
+  const [br, bg, bb] = parseBackgroundRgb(backgroundColor);
+  const imageData = ctx2.getImageData(0, 0, w, h);
   const data = imageData.data;
 
   let minX = w;
@@ -95,10 +128,11 @@ export class ExportService {
     filename: string = 'bio-data.pdf'
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const sourceCanvas = await toCanvas(element, CAPTURE_OPTIONS);
+      const captureOpts = getCaptureOptions();
+      const sourceCanvas = await toCanvas(element, captureOpts);
       const croppedCanvas = cropCanvasToContent(
         sourceCanvas,
-        CAPTURE_OPTIONS.backgroundColor
+        captureOpts.backgroundColor
       );
 
       const dataUrl = croppedCanvas.toDataURL('image/jpeg', 0.95);
@@ -153,10 +187,11 @@ export class ExportService {
     filename?: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const sourceCanvas = await toCanvas(element, CAPTURE_OPTIONS);
+      const captureOpts = getCaptureOptions();
+      const sourceCanvas = await toCanvas(element, captureOpts);
       const croppedCanvas = cropCanvasToContent(
         sourceCanvas,
-        CAPTURE_OPTIONS.backgroundColor
+        captureOpts.backgroundColor
       );
 
       const mime = format === 'png' ? 'image/png' : 'image/jpeg';
