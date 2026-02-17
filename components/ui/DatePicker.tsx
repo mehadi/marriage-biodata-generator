@@ -250,9 +250,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 month={displayMonth}
                 onMonthChange={setDisplayMonth}
                 disabled={
-                  minDate || maxDate
-                    ? { before: minDate, after: maxDate }
-                    : undefined
+                  (() => {
+                    const matchers: Array<{ before: Date } | { after: Date }> = [];
+                    if (minDate) matchers.push({ before: minDate });
+                    if (maxDate) matchers.push({ after: maxDate });
+                    return matchers.length > 0 ? matchers : undefined;
+                  })()
                 }
                 className="datepicker-custom"
                 classNames={{
