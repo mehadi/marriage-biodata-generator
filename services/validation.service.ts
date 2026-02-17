@@ -110,8 +110,8 @@ export class ValidationService {
       return { isValid: true, errors: [] };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors: ValidationError[] = error.errors.map((err) => ({
-          field: err.path.join('.'),
+        const errors: ValidationError[] = error.issues.map((err) => ({
+          field: err.path.map(String).join('.'),
           message: err.message,
         }));
         return { isValid: false, errors };
@@ -129,8 +129,8 @@ export class ValidationService {
       return { isValid: true, errors: [] };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors: ValidationError[] = error.errors.map((err) => ({
-          field: err.path.join('.'),
+        const errors: ValidationError[] = error.issues.map((err) => ({
+          field: err.path.map(String).join('.'),
           message: err.message,
         }));
         return { isValid: false, errors };

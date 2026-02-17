@@ -7,7 +7,14 @@ import type { Locale } from './types';
 import { en } from './translations/en';
 import { bn } from './translations/bn';
 
-export type Translations = typeof en;
+/** Same shape as en/bn but values are string or string[] so any locale satisfies it */
+type DeepStringify<T> = T extends readonly (infer U)[]
+  ? readonly string[]
+  : T extends object
+    ? { [K in keyof T]: DeepStringify<T[K]> }
+    : string;
+
+export type Translations = DeepStringify<typeof en>;
 
 const translations: Record<Locale, Translations> = {
   en,
@@ -69,6 +76,6 @@ export function getOptionLabel(
 
 export { en } from './translations/en';
 export { bn } from './translations/bn';
-export type { Locale, Translations };
+export type { Locale };
 export type { EnTranslations } from './translations/en';
 export { LOCALES, LOCALE_LABELS, STORAGE_KEY } from './types';

@@ -33,12 +33,13 @@ export function hasReligiousInfo(data: Partial<BioData>): boolean {
   if (!info) return false;
   
   // At least one field should be filled (excluding empty strings and 'None')
+  const s = (v: unknown) => (v as string) !== '' && (v as string) !== 'None';
   return !!(
-    (info.prayerPractice && info.prayerPractice !== 'None' && info.prayerPractice !== '') ||
-    (info.quranRecitation && info.quranRecitation !== 'None' && info.quranRecitation !== '') ||
-    (info.islamicKnowledge && info.islamicKnowledge !== 'None' && info.islamicKnowledge !== '') ||
-    (info.hijabOrBeard && info.hijabOrBeard !== 'None' && info.hijabOrBeard !== '') ||
-    (info.sect && info.sect !== 'None' && info.sect !== '') ||
+    (info.prayerPractice && s(info.prayerPractice)) ||
+    (info.quranRecitation && s(info.quranRecitation)) ||
+    (info.islamicKnowledge && s(info.islamicKnowledge)) ||
+    (info.hijabOrBeard && s(info.hijabOrBeard)) ||
+    (info.sect && s(info.sect)) ||
     (info.madhab && info.madhab.trim() !== '') ||
     (info.otherReligiousInfo && info.otherReligiousInfo.trim() !== '')
   );
