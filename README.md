@@ -8,7 +8,7 @@ Create professional Islamic marriage bio data with beautiful templates. Free, pr
 
 - **Structured form** — Personal, religious, education, professional, family, contact, and partner expectations
 - **Live preview** — See your bio data update as you type
-- **Three templates** — Modern (clean & minimal), Traditional (classic & formal), Elegant (sophisticated)
+- **Eight templates** — Modern, Minimal, Gradient, Card, Elegant (modern styles); Traditional, Formal, Heritage (classic styles)
 - **Drafts** — Save, load, and delete drafts in the browser (localStorage); no server storage
 - **Export** — Download as PDF or PNG image, or print directly
 - **Bilingual** — Full UI in English and Bengali with a persistent language preference

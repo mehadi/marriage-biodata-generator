@@ -110,7 +110,15 @@ export interface TemplateProps {
   className?: string;
 }
 
-export type TemplateType = 'modern' | 'traditional' | 'elegant';
+export type TemplateType =
+  | 'modern'
+  | 'traditional'
+  | 'elegant'
+  | 'minimal'
+  | 'gradient'
+  | 'card'
+  | 'formal'
+  | 'heritage';
 
 export type ExportFormat = 'pdf' | 'image' | 'print';
 

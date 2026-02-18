@@ -241,8 +241,13 @@ export default function CreatePage() {
                 label={t('create.chooseTemplate')}
                 options={[
                   { value: 'modern', label: `🎨 ${t('create.templateModern')}` },
-                  { value: 'traditional', label: `📜 ${t('create.templateTraditional')}` },
+                  { value: 'minimal', label: `◻ ${t('create.templateMinimal')}` },
+                  { value: 'gradient', label: `🌊 ${t('create.templateGradient')}` },
+                  { value: 'card', label: `📇 ${t('create.templateCard')}` },
                   { value: 'elegant', label: `✨ ${t('create.templateElegant')}` },
+                  { value: 'traditional', label: `📜 ${t('create.templateTraditional')}` },
+                  { value: 'formal', label: `📋 ${t('create.templateFormal')}` },
+                  { value: 'heritage', label: `🏛 ${t('create.templateHeritage')}` },
                 ]}
                 value={selectedTemplate}
                 onChange={(e) => setSelectedTemplate(e.target.value as any)}

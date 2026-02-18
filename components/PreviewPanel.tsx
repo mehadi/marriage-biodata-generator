@@ -10,6 +10,11 @@ import { BioData, TemplateType } from '@/types/biodata';
 import { ModernTemplate } from './templates/ModernTemplate';
 import { TraditionalTemplate } from './templates/TraditionalTemplate';
 import { ElegantTemplate } from './templates/ElegantTemplate';
+import { MinimalTemplate } from './templates/MinimalTemplate';
+import { GradientTemplate } from './templates/GradientTemplate';
+import { CardTemplate } from './templates/CardTemplate';
+import { FormalTemplate } from './templates/FormalTemplate';
+import { HeritageTemplate } from './templates/HeritageTemplate';
 import { Button } from './ui/Button';
 import { Modal } from './ui/Modal';
 import { ExportService } from '@/services/export.service';
@@ -97,14 +102,22 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   };
 
   const renderTemplate = () => {
-    // Cast to BioData for template rendering
     const fullBioData = bioData as BioData;
-
     switch (template) {
       case 'traditional':
         return <TraditionalTemplate bioData={fullBioData} />;
       case 'elegant':
         return <ElegantTemplate bioData={fullBioData} />;
+      case 'minimal':
+        return <MinimalTemplate bioData={fullBioData} />;
+      case 'gradient':
+        return <GradientTemplate bioData={fullBioData} />;
+      case 'card':
+        return <CardTemplate bioData={fullBioData} />;
+      case 'formal':
+        return <FormalTemplate bioData={fullBioData} />;
+      case 'heritage':
+        return <HeritageTemplate bioData={fullBioData} />;
       case 'modern':
       default:
         return <ModernTemplate bioData={fullBioData} />;
