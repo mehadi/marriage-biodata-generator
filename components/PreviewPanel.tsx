@@ -23,6 +23,12 @@ interface PreviewPanelProps {
   showMobilePreview?: boolean;
   /** Optional ref for parent to access preview element (e.g. for header export buttons) */
   exportRef?: React.MutableRefObject<HTMLDivElement | null>;
+  /** Optional controlled zoom (e.g. for export-at-200% flow). If not provided, zoom is internal. */
+  zoomLevel?: number;
+  setZoomLevel?: (value: number | ((prev: number) => number)) => void;
+  /** Optional export handlers from parent (run with 200% zoom then restore 50%). If not provided, use internal export. */
+  onExportPDF?: () => Promise<void>;
+  onExportImage?: () => Promise<void>;
 }
 
 export const PreviewPanel: React.FC<PreviewPanelProps> = ({ 
@@ -30,6 +36,10 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   template,
   showMobilePreview = false,
   exportRef,
+  zoomLevel: zoomLevelProp,
+  setZoomLevel: setZoomLevelProp,
+  onExportPDF,
+  onExportImage,
 }) => {
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -40,9 +50,16 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   const { addToast } = useToast();
   const t = useLanguage().t;
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(50);
+  const [internalZoom, setInternalZoom] = useState(50);
+
+  const zoomLevel = zoomLevelProp ?? internalZoom;
+  const setZoomLevel = setZoomLevelProp ?? setInternalZoom;
 
   const handleExportPDF = async () => {
+    if (onExportPDF) {
+      await onExportPDF();
+      return;
+    }
     if (!previewRef.current) return;
 
     addToast('info', t('create.toast.generatingPdf'), 2000);
@@ -59,6 +76,10 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   };
 
   const handleExportImage = async () => {
+    if (onExportImage) {
+      await onExportImage();
+      return;
+    }
     if (!previewRef.current) return;
 
     addToast('info', t('create.toast.generatingImage'), 2000);

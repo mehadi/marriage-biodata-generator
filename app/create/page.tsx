@@ -46,7 +46,13 @@ export default function CreatePage() {
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [draftName, setDraftName] = useState('');
+  const [zoomLevel, setZoomLevel] = useState(50);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  /** Wait for next paint so zoom change is applied before capture */
+  const waitForPaint = () => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+  /** Extra delay so 100% zoom is fully rendered before capture */
+  const EXPORT_ZOOM_DELAY_MS = 350;
 
   const {
     register,
@@ -111,15 +117,22 @@ export default function CreatePage() {
       addToast('error', t('create.toast.previewNotReady'));
       return;
     }
+    setZoomLevel(100);
+    await waitForPaint();
+    await new Promise((r) => setTimeout(r, EXPORT_ZOOM_DELAY_MS));
     addToast('info', t('create.toast.generatingPdf'), 2000);
-    const result = await ExportService.exportToPDF(
-      previewRef.current,
-      `biodata-${formData.personalInfo?.fullName || 'document'}.pdf`
-    );
-    if (result.success) {
-      addToast('success', t('create.toast.pdfDownloaded'));
-    } else {
-      addToast('error', result.error || t('create.toast.pdfFailed'));
+    try {
+      const result = await ExportService.exportToPDF(
+        previewRef.current,
+        `biodata-${formData.personalInfo?.fullName || 'document'}.pdf`
+      );
+      if (result.success) {
+        addToast('success', t('create.toast.pdfDownloaded'));
+      } else {
+        addToast('error', result.error || t('create.toast.pdfFailed'));
+      }
+    } finally {
+      setZoomLevel(50);
     }
   };
 
@@ -128,16 +141,23 @@ export default function CreatePage() {
       addToast('error', t('create.toast.previewNotReady'));
       return;
     }
+    setZoomLevel(100);
+    await waitForPaint();
+    await new Promise((r) => setTimeout(r, EXPORT_ZOOM_DELAY_MS));
     addToast('info', t('create.toast.generatingImage'), 2000);
-    const result = await ExportService.exportToImage(
-      previewRef.current,
-      'png',
-      `biodata-${formData.personalInfo?.fullName || 'document'}.png`
-    );
-    if (result.success) {
-      addToast('success', t('create.toast.imageDownloaded'));
-    } else {
-      addToast('error', result.error || t('create.toast.imageFailed'));
+    try {
+      const result = await ExportService.exportToImage(
+        previewRef.current,
+        'png',
+        `biodata-${formData.personalInfo?.fullName || 'document'}.png`
+      );
+      if (result.success) {
+        addToast('success', t('create.toast.imageDownloaded'));
+      } else {
+        addToast('error', result.error || t('create.toast.imageFailed'));
+      }
+    } finally {
+      setZoomLevel(50);
     }
   };
 
@@ -260,6 +280,10 @@ export default function CreatePage() {
               template={selectedTemplate}
               showMobilePreview={true}
               exportRef={previewRef}
+              zoomLevel={zoomLevel}
+              setZoomLevel={setZoomLevel}
+              onExportPDF={handleExportPDF}
+              onExportImage={handleExportImage}
             />
           </div>
         </div>

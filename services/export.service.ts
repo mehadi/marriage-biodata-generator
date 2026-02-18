@@ -21,8 +21,22 @@ function isMobile(): boolean {
   return typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-/** Target export width in pixels; output is independent of viewport/capture size */
-const TARGET_EXPORT_WIDTH = 1200;
+/**
+ * Desktop: base width for capture. With pixelRatio 2, effective width is 2x (~3448px).
+ * Chosen so (baseWidth * 2) * (baseHeight * 2) <= MAX_CANVAS_PIXELS.
+ */
+const TARGET_EXPORT_WIDTH_DESKTOP = 1724;
+
+/** Target export width on mobile to avoid toBlob/memory limits */
+const TARGET_EXPORT_WIDTH_MOBILE = 1200;
+
+/** pixelRatio applied by html-to-image (canvas size = width * pixelRatio). Use 2 on desktop for sharper output. */
+const DESKTOP_PIXEL_RATIO = 2;
+
+/**
+ * Max base pixels so that (width * pixelRatio) * (height * pixelRatio) <= MAX_CANVAS_PIXELS.
+ */
+const MAX_BASE_PIXELS_DESKTOP = Math.floor(MAX_CANVAS_PIXELS / (DESKTOP_PIXEL_RATIO * DESKTOP_PIXEL_RATIO));
 
 /**
  * Compute export dimensions from the element's aspect ratio so output is deterministic
@@ -32,10 +46,12 @@ function getExportDimensions(element: HTMLElement): { width: number; height: num
   const w = element.offsetWidth || 400;
   const h = element.offsetHeight || 600;
   const aspect = h / w;
-  let width = TARGET_EXPORT_WIDTH;
-  let height = Math.round(TARGET_EXPORT_WIDTH * aspect);
-  if (width * height > MAX_CANVAS_PIXELS) {
-    const scale = Math.sqrt(MAX_CANVAS_PIXELS / (width * height));
+  const targetWidth = isMobile() ? TARGET_EXPORT_WIDTH_MOBILE : TARGET_EXPORT_WIDTH_DESKTOP;
+  let width = targetWidth;
+  let height = Math.round(targetWidth * aspect);
+  const maxPixels = isMobile() ? MAX_CANVAS_PIXELS : MAX_BASE_PIXELS_DESKTOP;
+  if (width * height > maxPixels) {
+    const scale = Math.sqrt(maxPixels / (width * height));
     width = Math.max(1, Math.floor(width * scale));
     height = Math.max(1, Math.floor(height * scale));
   }
@@ -47,6 +63,7 @@ function getCaptureOptions(element: HTMLElement): {
   backgroundColor: string;
   pixelRatio: number;
   cacheBust: boolean;
+  skipAutoScale?: boolean;
   width?: number;
   height?: number;
 } {
@@ -54,8 +71,9 @@ function getCaptureOptions(element: HTMLElement): {
   return {
     quality: 1,
     backgroundColor: '#ffffff',
-    pixelRatio: 1,
+    pixelRatio: isMobile() ? 1 : DESKTOP_PIXEL_RATIO,
     cacheBust: true,
+    skipAutoScale: true,
     width: dimensions.width,
     height: dimensions.height,
   };
