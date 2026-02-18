@@ -26,6 +26,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
+  applicationName: siteConfig.name,
   icons: {
     icon: "/favicon.png",
   },
@@ -38,6 +39,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Mehadi", url: "https://www.mehadi.me" }],
   creator: "Mehadi",
   publisher: "Mehadi",
+  referrer: "strict-origin-when-cross-origin",
   formatDetection: {
     email: false,
     address: false,

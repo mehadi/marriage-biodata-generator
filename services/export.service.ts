@@ -21,16 +21,43 @@ function isMobile(): boolean {
   return typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-function getCaptureOptions(): { quality: number; backgroundColor: string; pixelRatio: number; cacheBust: boolean } {
-  const pixelRatio =
-    typeof window !== 'undefined'
-      ? Math.min(window.devicePixelRatio || 2, 3)
-      : 2;
+/** Target export width in pixels; output is independent of viewport/capture size */
+const TARGET_EXPORT_WIDTH = 1200;
+
+/**
+ * Compute export dimensions from the element's aspect ratio so output is deterministic
+ * and high-res regardless of how large the preview is on screen.
+ */
+function getExportDimensions(element: HTMLElement): { width: number; height: number } {
+  const w = element.offsetWidth || 400;
+  const h = element.offsetHeight || 600;
+  const aspect = h / w;
+  let width = TARGET_EXPORT_WIDTH;
+  let height = Math.round(TARGET_EXPORT_WIDTH * aspect);
+  if (width * height > MAX_CANVAS_PIXELS) {
+    const scale = Math.sqrt(MAX_CANVAS_PIXELS / (width * height));
+    width = Math.max(1, Math.floor(width * scale));
+    height = Math.max(1, Math.floor(height * scale));
+  }
+  return { width, height };
+}
+
+function getCaptureOptions(element: HTMLElement): {
+  quality: number;
+  backgroundColor: string;
+  pixelRatio: number;
+  cacheBust: boolean;
+  width?: number;
+  height?: number;
+} {
+  const dimensions = getExportDimensions(element);
   return {
     quality: 1,
     backgroundColor: '#ffffff',
-    pixelRatio: isMobile() ? 1 : pixelRatio,
+    pixelRatio: 1,
     cacheBust: true,
+    width: dimensions.width,
+    height: dimensions.height,
   };
 }
 
@@ -177,7 +204,7 @@ export class ExportService {
     filename: string = 'bio-data.pdf'
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const captureOpts = getCaptureOptions();
+      const captureOpts = getCaptureOptions(element);
       const sourceCanvas = await toCanvas(element, captureOpts);
       const croppedCanvas = cropCanvasToContent(
         sourceCanvas,
@@ -197,24 +224,18 @@ export class ExportService {
         img.src = dataUrl;
       });
 
-      const imgHeight = (img.height * imgWidth) / img.width;
-      const fitsOnePage = imgHeight <= pageHeight;
+      let drawWidth = imgWidth;
+      let drawHeight = (img.height * imgWidth) / img.width;
 
-      if (fitsOnePage) {
-        const y = (pageHeight - imgHeight) / 2;
-        pdf.addImage(dataUrl, 'PNG', 0, y, imgWidth, imgHeight);
-      } else {
-        let heightLeft = imgHeight;
-        let position = 0;
-        pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
+      if (drawHeight > pageHeight) {
+        const scale = pageHeight / drawHeight;
+        drawHeight = pageHeight;
+        drawWidth = drawWidth * scale;
       }
+
+      const x = (A4_WIDTH_MM - drawWidth) / 2;
+      const y = (pageHeight - drawHeight) / 2;
+      pdf.addImage(dataUrl, 'PNG', x, y, drawWidth, drawHeight);
 
       pdf.save(filename);
       return { success: true };
@@ -236,7 +257,7 @@ export class ExportService {
     filename?: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const captureOpts = getCaptureOptions();
+      const captureOpts = getCaptureOptions(element);
       const sourceCanvas = await toCanvas(element, captureOpts);
       let croppedCanvas = cropCanvasToContent(
         sourceCanvas,

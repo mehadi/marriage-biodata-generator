@@ -8,11 +8,13 @@ export const siteConfig = {
   shortName: "Bio Data Maker",
   description:
     "Create professional Islamic marriage bio data with beautiful templates. Free, private, and easy to use. Export to PDF or image.",
+  /** Used for canonical URLs, sitemap, and Open Graph. No trailing slash. */
   url:
     typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL
       ? process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "")
       : "https://marriage-bio-data-maker.vercel.app",
   defaultLocale: "en" as const,
+  /** SEO keywords; keep under ~10 for best practice. */
   keywords: [
     "marriage bio data",
     "Islamic bio data",

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { siteConfig } from "@/lib/site-config";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 
 const createTitle = "Create Bio Data";
 const createDescription =
@@ -24,10 +25,24 @@ export const metadata: Metadata = {
   alternates: {
     canonical: `${siteConfig.url}/create`,
   },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function CreateLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return children;
+  return (
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: siteConfig.name, url: "/" },
+          { name: "Create Bio Data", url: "/create" },
+        ]}
+      />
+      {children}
+    </>
+  );
 }
