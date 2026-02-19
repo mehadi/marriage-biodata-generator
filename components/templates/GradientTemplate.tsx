@@ -6,7 +6,7 @@
 'use client';
 
 import React from 'react';
-import { TemplateProps, renderField, getAge, formatSiblings } from './BaseTemplate';
+import { TemplateProps, renderField, getAge, formatSiblings, getPhotoSizeStyle } from './BaseTemplate';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 import {
@@ -34,7 +34,7 @@ export const GradientTemplate: React.FC<TemplateProps> = ({ bioData, className }
             <p className="mt-2 text-sm font-medium text-teal-600">{t('template.marriageBioData')}</p>
           </div>
           {photo && (
-            <div className="h-28 w-28 overflow-hidden rounded-2xl border-2 border-teal-200 shadow-md">
+            <div className="overflow-hidden rounded-2xl border-2 border-teal-200 shadow-md" style={getPhotoSizeStyle(112, bioData)}>
               <img src={photo} alt={t('common.profile')} className="h-full w-full object-cover" />
             </div>
           )}

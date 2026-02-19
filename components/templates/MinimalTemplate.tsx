@@ -6,7 +6,7 @@
 'use client';
 
 import React from 'react';
-import { TemplateProps, renderField, getAge, formatSiblings } from './BaseTemplate';
+import { TemplateProps, renderField, getAge, formatSiblings, getPhotoSizeStyle } from './BaseTemplate';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 import {
@@ -36,7 +36,7 @@ export const MinimalTemplate: React.FC<TemplateProps> = ({ bioData, className })
             </p>
           </div>
           {photo && (
-            <div className="h-28 w-28 shrink-0 overflow-hidden rounded-sm border border-slate-200">
+            <div className="shrink-0 overflow-hidden rounded-sm border border-slate-200" style={getPhotoSizeStyle(112, bioData)}>
               <img src={photo} alt={t('common.profile')} className="h-full w-full object-cover" />
             </div>
           )}

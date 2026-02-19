@@ -93,6 +93,8 @@ export interface BioData {
   contactInfo: ContactInfo;
   partnerExpectations: PartnerExpectations;
   photo?: string; // base64 encoded image
+  /** Photo display size in preview/export (50–200%). Default 100. */
+  photoSizePercent?: number;
   additionalInfo?: string;
   createdAt?: string;
   updatedAt?: string;

@@ -6,7 +6,7 @@
 'use client';
 
 import React from 'react';
-import { TemplateProps, renderField, getAge, formatSiblings } from './BaseTemplate';
+import { TemplateProps, renderField, getAge, formatSiblings, getPhotoSizeStyle } from './BaseTemplate';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 import { 
@@ -29,7 +29,7 @@ export const ElegantTemplate: React.FC<TemplateProps> = ({ bioData, className })
         <div className="mb-8 text-center">
           <div className="relative inline-block">
             {photo && (
-              <div className="mx-auto mb-4 h-36 w-36 overflow-hidden rounded-full border-4 border-blue-600 shadow-lg ring-4 ring-blue-100">
+              <div className="mx-auto mb-4 overflow-hidden rounded-full border-4 border-blue-600 shadow-lg ring-4 ring-blue-100" style={getPhotoSizeStyle(144, bioData)}>
                 <img src={photo} alt={t('common.profile')} className="h-full w-full object-cover" />
               </div>
             )}

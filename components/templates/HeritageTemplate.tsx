@@ -6,7 +6,7 @@
 'use client';
 
 import React from 'react';
-import { TemplateProps, renderField, getAge, formatSiblings } from './BaseTemplate';
+import { TemplateProps, renderField, getAge, formatSiblings, getPhotoSizeStyle } from './BaseTemplate';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 import {
@@ -31,7 +31,7 @@ export const HeritageTemplate: React.FC<TemplateProps> = ({ bioData, className }
           <h1 className="text-4xl font-bold text-amber-900">{renderField(personalInfo.fullName, t)}</h1>
           <p className="mt-2 text-lg italic text-amber-800">{t('template.marriageBioData')}</p>
           {photo && (
-            <div className="mx-auto mt-5 h-36 w-36 overflow-hidden rounded-full border-4 border-amber-700/70 shadow-lg ring-4 ring-amber-200/50">
+            <div className="mx-auto mt-5 overflow-hidden rounded-full border-4 border-amber-700/70 shadow-lg ring-4 ring-amber-200/50" style={getPhotoSizeStyle(144, bioData)}>
               <img src={photo} alt={t('common.profile')} className="h-full w-full object-cover" />
             </div>
           )}

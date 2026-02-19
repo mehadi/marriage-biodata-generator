@@ -92,6 +92,7 @@ export const BioDataSchema = z.object({
   contactInfo: ContactInfoSchema,
   partnerExpectations: PartnerExpectationsSchema,
   photo: z.string().optional(),
+  photoSizePercent: z.number().min(50).max(200).optional(),
   additionalInfo: z.string().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),

@@ -6,7 +6,7 @@
 'use client';
 
 import React from 'react';
-import { TemplateProps, renderField, getAge, formatSiblings } from './BaseTemplate';
+import { TemplateProps, renderField, getAge, formatSiblings, getPhotoSizeStyle } from './BaseTemplate';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 import {
@@ -34,7 +34,7 @@ export const FormalTemplate: React.FC<TemplateProps> = ({ bioData, className }) 
             {t('template.marriageBioData')}
           </p>
           {photo && (
-            <div className="mx-auto mt-4 h-36 w-36 overflow-hidden rounded-sm border-2 border-slate-800">
+            <div className="mx-auto mt-4 overflow-hidden rounded-sm border-2 border-slate-800" style={getPhotoSizeStyle(144, bioData)}>
               <img src={photo} alt={t('common.profile')} className="h-full w-full object-cover" />
             </div>
           )}

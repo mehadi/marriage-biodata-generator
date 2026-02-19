@@ -277,6 +277,7 @@ export const bn = {
     bioDataPreview: 'বায়ো ডেটা প্রিভিউ',
     openPreview: 'প্রিভিউ খুলুন',
     zoom: 'জুম',
+    photoSize: 'ছবির আকার',
   },
   template: {
     marriageBioData: 'বিবাহ বায়ো ডেটা',

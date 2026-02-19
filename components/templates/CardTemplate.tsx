@@ -6,7 +6,7 @@
 'use client';
 
 import React from 'react';
-import { TemplateProps, renderField, getAge, formatSiblings } from './BaseTemplate';
+import { TemplateProps, renderField, getAge, formatSiblings, getPhotoSizeStyle } from './BaseTemplate';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 import {
@@ -32,7 +32,7 @@ export const CardTemplate: React.FC<TemplateProps> = ({ bioData, className }) =>
             <p className="mt-1 text-sm font-medium text-indigo-600">{t('template.marriageBioData')}</p>
           </div>
           {photo && (
-            <div className="h-24 w-24 overflow-hidden rounded-xl border-2 border-indigo-200 shadow">
+            <div className="overflow-hidden rounded-xl border-2 border-indigo-200 shadow" style={getPhotoSizeStyle(96, bioData)}>
               <img src={photo} alt={t('common.profile')} className="h-full w-full object-cover" />
             </div>
           )}

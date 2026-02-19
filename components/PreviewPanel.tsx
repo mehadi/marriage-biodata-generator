@@ -34,6 +34,8 @@ interface PreviewPanelProps {
   /** Optional export handlers from parent (run with 200% zoom then restore 50%). If not provided, use internal export. */
   onExportPDF?: () => Promise<void>;
   onExportImage?: () => Promise<void>;
+  /** Called when user changes photo size (50–200%). If not provided, photo size control is hidden. */
+  onPhotoSizeChange?: (percent: number) => void;
 }
 
 export const PreviewPanel: React.FC<PreviewPanelProps> = ({ 
@@ -45,6 +47,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   setZoomLevel: setZoomLevelProp,
   onExportPDF,
   onExportImage,
+  onPhotoSizeChange,
 }) => {
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -171,6 +174,30 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
               <ZoomIn className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* Photo size (only when photo is set and parent provides handler) */}
+          {onPhotoSizeChange && bioData.photo && (
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+              <label className="text-xs font-medium text-slate-600 whitespace-nowrap">
+                {t('preview.photoSize')}
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={50}
+                  max={200}
+                  step={10}
+                  value={Math.min(200, Math.max(50, bioData.photoSizePercent ?? 100))}
+                  onChange={(e) => onPhotoSizeChange(Number(e.target.value))}
+                  className="h-2 w-24 flex-1 min-w-0 accent-emerald-600"
+                  aria-label={t('preview.photoSize')}
+                />
+                <span className="text-xs font-medium text-slate-700 tabular-nums w-9">
+                  {bioData.photoSizePercent ?? 100}%
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Preview Container */}
@@ -263,6 +290,28 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
               </Button>
             </div>
           </div>
+
+          {/* Photo size in modal */}
+          {onPhotoSizeChange && bioData.photo && (
+            <div className="flex flex-col gap-2 rounded-lg bg-slate-100 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-sm font-medium text-slate-700">{t('preview.photoSize')}</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={50}
+                  max={200}
+                  step={10}
+                  value={Math.min(200, Math.max(50, bioData.photoSizePercent ?? 100))}
+                  onChange={(e) => onPhotoSizeChange(Number(e.target.value))}
+                  className="h-2 flex-1 accent-emerald-600"
+                  aria-label={t('preview.photoSize')}
+                />
+                <span className="min-w-[3rem] text-center text-sm font-semibold text-slate-900 tabular-nums">
+                  {bioData.photoSizePercent ?? 100}%
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Preview */}
           <div className="overflow-auto rounded-lg border border-slate-200 bg-slate-100 p-4" style={{ maxHeight: '60vh' }}>

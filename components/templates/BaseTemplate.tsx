@@ -4,6 +4,7 @@
  * Follows Open/Closed Principle: Open for extension, closed for modification
  */
 
+import React from 'react';
 import { BioData } from '@/types/biodata';
 import { calculateAge } from '@/lib/utils';
 
@@ -13,6 +14,22 @@ export interface TemplateProps {
   bioData: BioData;
   className?: string;
 }
+
+const DEFAULT_PHOTO_SIZE_PERCENT = 100;
+
+/**
+ * Returns inline style for photo container so size can be scaled by user preference.
+ * @param baseSizePx - Base size in pixels (e.g. 128 for h-32)
+ * @param bioData - BioData containing optional photoSizePercent (50–200)
+ */
+export const getPhotoSizeStyle = (
+  baseSizePx: number,
+  bioData: BioData
+): React.CSSProperties => {
+  const percent = bioData.photoSizePercent ?? DEFAULT_PHOTO_SIZE_PERCENT;
+  const size = Math.round((baseSizePx * percent) / 100);
+  return { width: size, height: size, minWidth: size, minHeight: size };
+};
 
 /**
  * Utility function to safely render field values

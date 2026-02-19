@@ -277,6 +277,7 @@ export const en = {
     bioDataPreview: 'Bio Data Preview',
     openPreview: 'Open preview',
     zoom: 'Zoom',
+    photoSize: 'Photo size',
   },
   template: {
     marriageBioData: 'Marriage Bio Data',

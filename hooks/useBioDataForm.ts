@@ -75,6 +75,7 @@ const getInitialBioData = (): Partial<BioData> => ({
     otherExpectations: '',
   },
   photo: undefined,
+  photoSizePercent: 100,
   additionalInfo: '',
 });
 

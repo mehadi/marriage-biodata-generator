@@ -289,6 +289,7 @@ export default function CreatePage() {
               setZoomLevel={setZoomLevel}
               onExportPDF={handleExportPDF}
               onExportImage={handleExportImage}
+              onPhotoSizeChange={(percent) => setValue('photoSizePercent', percent)}
             />
           </div>
         </div>
