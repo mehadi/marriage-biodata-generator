@@ -1,0 +1,354 @@
+/**
+ * Preview Panel Component
+ * Enhanced with mobile preview modal and better UX
+ */
+
+'use client';
+
+import React, { useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { BioData, TemplateType } from '@/types/biodata';
+import { Button } from './ui/Button';
+import { Modal } from './ui/Modal';
+import { SkeletonCard } from './ui/Skeleton';
+import { useLanguage } from '@/context/LanguageContext';
+import { Download, Image as ImageIcon, Eye, ZoomOut, ZoomIn } from 'lucide-react';
+import { useToast } from './ui/Toast';
+import { QrCodeBlock } from './QrCodeBlock';
+
+// Only one template renders at a time — load the active one on demand instead of
+// bundling all 8 (1,600+ lines) into the initial /create JS payload.
+const templateLoading = () => <SkeletonCard className="w-[210mm]" />;
+const ModernTemplate = dynamic(() => import('./templates/ModernTemplate').then((m) => m.ModernTemplate), { loading: templateLoading });
+const TraditionalTemplate = dynamic(() => import('./templates/TraditionalTemplate').then((m) => m.TraditionalTemplate), { loading: templateLoading });
+const ElegantTemplate = dynamic(() => import('./templates/ElegantTemplate').then((m) => m.ElegantTemplate), { loading: templateLoading });
+const MinimalTemplate = dynamic(() => import('./templates/MinimalTemplate').then((m) => m.MinimalTemplate), { loading: templateLoading });
+const GradientTemplate = dynamic(() => import('./templates/GradientTemplate').then((m) => m.GradientTemplate), { loading: templateLoading });
+const CardTemplate = dynamic(() => import('./templates/CardTemplate').then((m) => m.CardTemplate), { loading: templateLoading });
+const FormalTemplate = dynamic(() => import('./templates/FormalTemplate').then((m) => m.FormalTemplate), { loading: templateLoading });
+const HeritageTemplate = dynamic(() => import('./templates/HeritageTemplate').then((m) => m.HeritageTemplate), { loading: templateLoading });
+
+interface PreviewPanelProps {
+  bioData: Partial<BioData>;
+  template: TemplateType;
+  showMobilePreview?: boolean;
+  /** Optional ref for parent to access preview element (e.g. for header export buttons) */
+  exportRef?: React.MutableRefObject<HTMLDivElement | null>;
+  /** Optional controlled zoom (e.g. for export-at-200% flow). If not provided, zoom is internal. */
+  zoomLevel?: number;
+  setZoomLevel?: (value: number | ((prev: number) => number)) => void;
+  /** Optional export handlers from parent (run with 200% zoom then restore 50%). If not provided, use internal export. */
+  onExportPDF?: () => Promise<void>;
+  onExportImage?: () => Promise<void>;
+  /** Called when user changes photo size (50–200%). If not provided, photo size control is hidden. */
+  onPhotoSizeChange?: (percent: number) => void;
+  /** If provided, a QR code linking to this URL is shown at the bottom of the export area */
+  shareUrl?: string;
+}
+
+export const PreviewPanel: React.FC<PreviewPanelProps> = ({ 
+  bioData, 
+  template,
+  showMobilePreview = false,
+  exportRef,
+  zoomLevel: zoomLevelProp,
+  setZoomLevel: setZoomLevelProp,
+  onExportPDF,
+  onExportImage,
+  onPhotoSizeChange,
+  shareUrl,
+}) => {
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  const setPreviewRef = (el: HTMLDivElement | null) => {
+    (previewRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+    if (exportRef) exportRef.current = el;
+  };
+  const { addToast } = useToast();
+  const t = useLanguage().t;
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [internalZoom, setInternalZoom] = useState(50);
+
+  const zoomLevel = zoomLevelProp ?? internalZoom;
+  const setZoomLevel = setZoomLevelProp ?? setInternalZoom;
+
+  const handleExportPDF = async () => {
+    if (onExportPDF) {
+      await onExportPDF();
+      return;
+    }
+    if (!previewRef.current) return;
+
+    addToast('info', t('create.toast.generatingPdf'), 2000);
+    const { ExportService } = await import('@/services/export.service');
+    const result = await ExportService.exportToPDF(
+      previewRef.current,
+      `biodata-${bioData.personalInfo?.fullName || 'document'}.pdf`
+    );
+
+    if (result.success) {
+      addToast('success', t('create.toast.pdfDownloaded'));
+    } else {
+      addToast('error', result.error || t('create.toast.pdfFailed'));
+    }
+  };
+
+  const handleExportImage = async () => {
+    if (onExportImage) {
+      await onExportImage();
+      return;
+    }
+    if (!previewRef.current) return;
+
+    addToast('info', t('create.toast.generatingImage'), 2000);
+    const { ExportService } = await import('@/services/export.service');
+    const result = await ExportService.exportToImage(
+      previewRef.current,
+      'png',
+      `biodata-${bioData.personalInfo?.fullName || 'document'}.png`
+    );
+
+    if (result.success) {
+      addToast('success', t('create.toast.imageDownloaded'));
+    } else {
+      addToast('error', result.error || t('create.toast.imageFailed'));
+    }
+  };
+
+  const renderTemplate = () => {
+    const fullBioData = bioData as BioData;
+    switch (template) {
+      case 'traditional':
+        return <TraditionalTemplate bioData={fullBioData} />;
+      case 'elegant':
+        return <ElegantTemplate bioData={fullBioData} />;
+      case 'minimal':
+        return <MinimalTemplate bioData={fullBioData} />;
+      case 'gradient':
+        return <GradientTemplate bioData={fullBioData} />;
+      case 'card':
+        return <CardTemplate bioData={fullBioData} />;
+      case 'formal':
+        return <FormalTemplate bioData={fullBioData} />;
+      case 'heritage':
+        return <HeritageTemplate bioData={fullBioData} />;
+      case 'modern':
+      default:
+        return <ModernTemplate bioData={fullBioData} />;
+    }
+  };
+
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 10, 100));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 10, 30));
+  };
+
+  return (
+    <>
+      {/* Preview Panel - visible on all viewports so export (PDF/Image) works on mobile */}
+      <div className="sticky top-4 space-y-4">
+        {/* Export Buttons */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex gap-2">
+            <Button onClick={handleExportPDF} variant="primary" size="sm">
+              <Download className="mr-1.5 h-4 w-4" />
+              PDF
+            </Button>
+            <Button onClick={handleExportImage} variant="secondary" size="sm">
+              <ImageIcon className="mr-1.5 h-4 w-4" />
+              Image
+            </Button>
+          </div>
+          
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={handleZoomOut} 
+              variant="ghost" 
+              size="sm"
+              iconOnly
+              aria-label={t('common.zoomOut')}
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{zoomLevel}%</span>
+            <Button 
+              onClick={handleZoomIn} 
+              variant="ghost" 
+              size="sm"
+              iconOnly
+              aria-label={t('common.zoomIn')}
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Photo size (only when photo is set and parent provides handler) */}
+          {onPhotoSizeChange && bioData.photo && (
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+              <label className="text-xs font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                {t('preview.photoSize')}
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={50}
+                  max={200}
+                  step={10}
+                  value={Math.min(200, Math.max(50, bioData.photoSizePercent ?? 100))}
+                  onChange={(e) => onPhotoSizeChange(Number(e.target.value))}
+                  className="h-2 w-24 flex-1 min-w-0 accent-emerald-600"
+                  aria-label={t('preview.photoSize')}
+                />
+                <span className="text-xs font-medium text-slate-700 dark:text-slate-300 tabular-nums w-9">
+                  {bioData.photoSizePercent ?? 100}%
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Preview Container */}
+        <div className="overflow-hidden rounded-xl border border-slate-200 shadow-lg transition-shadow duration-200 hover:shadow-xl dark:border-slate-700">
+          <div className="max-h-[calc(100vh-200px)] overflow-y-auto bg-slate-100 p-4 dark:bg-slate-900">
+            <div 
+              ref={setPreviewRef} 
+              className="origin-top transform transition-transform duration-200"
+              style={{ transform: `scale(${zoomLevel / 100})` }}
+            >
+              {renderTemplate()}
+
+              {/* QR code footer — embedded in the export area so it appears on PDF/image exports.
+                  Intentionally light-only (no dark: classes): it gets captured into the exported
+                  PDF/PNG alongside the light-only templates, regardless of the app's theme. */}
+              {shareUrl && (
+                <div className="flex items-center justify-end gap-3 border-t border-slate-200 bg-white px-4 py-2">
+                  <p className="text-right text-[9px] leading-tight text-slate-500">
+                    Scan to view<br />digital version
+                  </p>
+                  <QrCodeBlock url={shareUrl} size={56} />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Preview Info */}
+        <div className="rounded-lg bg-emerald-50 p-3 text-xs text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">
+          <p className="font-medium">{t('preview.livePreview')}</p>
+          <p className="mt-1 text-emerald-600 dark:text-emerald-400">{t('preview.previewScale', { percent: String(zoomLevel) })}</p>
+        </div>
+      </div>
+
+      {/* Mobile Preview Button (FAB) */}
+      {showMobilePreview && (
+        <button
+          onClick={() => setIsPreviewModalOpen(true)}
+          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg transition-all duration-200 hover:scale-110 hover:bg-emerald-700 hover:shadow-xl active:scale-95 lg:hidden"
+          aria-label={t('preview.openPreview')}
+        >
+          <Eye className="h-6 w-6" />
+        </button>
+      )}
+
+      {/* Mobile Preview Modal */}
+      <Modal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        title={t('preview.bioDataPreview')}
+        size="full"
+      >
+        <div className="space-y-4">
+          {/* Export Buttons in Modal */}
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              onClick={() => {
+                handleExportPDF();
+                setIsPreviewModalOpen(false);
+              }} 
+              variant="primary" 
+              size="sm"
+            >
+              <Download className="mr-1.5 h-4 w-4" />
+              PDF
+            </Button>
+            <Button 
+              onClick={() => {
+                handleExportImage();
+                setIsPreviewModalOpen(false);
+              }} 
+              variant="secondary" 
+              size="sm"
+            >
+              <ImageIcon className="mr-1.5 h-4 w-4" />
+              Image
+            </Button>
+          </div>
+
+          {/* Zoom Controls */}
+          <div className="flex items-center justify-between rounded-lg bg-slate-100 dark:bg-slate-800 p-3">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('preview.zoom')}</span>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleZoomOut}
+                variant="ghost"
+                size="sm"
+                iconOnly
+                aria-label={t('common.zoomOut')}
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <span className="min-w-[3rem] text-center text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {zoomLevel}%
+              </span>
+              <Button
+                onClick={handleZoomIn}
+                variant="ghost"
+                size="sm"
+                iconOnly
+                aria-label={t('common.zoomIn')}
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Photo size in modal */}
+          {onPhotoSizeChange && bioData.photo && (
+            <div className="flex flex-col gap-2 rounded-lg bg-slate-100 dark:bg-slate-800 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('preview.photoSize')}</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={50}
+                  max={200}
+                  step={10}
+                  value={Math.min(200, Math.max(50, bioData.photoSizePercent ?? 100))}
+                  onChange={(e) => onPhotoSizeChange(Number(e.target.value))}
+                  className="h-2 flex-1 accent-emerald-600"
+                  aria-label={t('preview.photoSize')}
+                />
+                <span className="min-w-[3rem] text-center text-sm font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
+                  {bioData.photoSizePercent ?? 100}%
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Preview */}
+          <div className="overflow-auto rounded-lg border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-900 p-4" style={{ maxHeight: '60vh' }}>
+            <div 
+              className="origin-top-left transform transition-transform duration-200"
+              style={{ transform: `scale(${zoomLevel / 100})` }}
+            >
+              {renderTemplate()}
+            </div>
+          </div>
+        </div>
+      </Modal>
+    </>
+  );
+};
